@@ -15,6 +15,7 @@ class LineIterator:
         self.line = None
         self.n = None
         self.position = None
+        self.start = None # Declare to avoid constantly declaring variables
 
     def set(self, line):
         self.position = 0
@@ -22,23 +23,18 @@ class LineIterator:
         self.n = len(line)
 
     def read_value(self):
-        i = self.position
-        while i < self.n and self.line[i] in LineIterator.SPACES:
-            i += 1
+        try:
+            while self.line[self.position] in LineIterator.SPACES:
+                self.position += 1
 
-        if i == self.n:
+            self.start = self.position
+
+            while not self.line[self.position] in LineIterator.SPACES:
+                self.position += 1
+
+            return self.line[self.start:self.position]
+        except IndexError:
             raise CustomLineIteratorDone
-
-        start = i
-
-        while i < self.n and not self.line[i] in LineIterator.SPACES:
-            i += 1
-        if i == self.n:
-            raise CustomLineIteratorDone
-
-        end = i
-        self.position = i
-        return self.line[start:end]
 
 
 class Row:
