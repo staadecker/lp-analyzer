@@ -1,27 +1,41 @@
-from typing import List, Dict
-import time
+from typing import Dict, Optional
 
-SYMBOL_MAPPING = {"L": "<=", "G": ">=", "E": "=", "N": "Obj"}
+# Used when printing rows. RHS values are on the left, hence why >= and <= are flipped.
+SYMBOL_MAPPING = {"L": ">=", "G": "<=", "E": "=", "N": "Obj:"}
 
 
-class ExpressionRow:
-    """A Constraint in the model."""
+class Row:
+    """A constraint or the objective function in the model."""
 
-    def __init__(self, name, constraint_type=None):
-        self.name = name
+    def __init__(self, name: str, row_type=None):
+        """
+        :param name: name of the row
+        :param row_type: letter representing the row type according to the MPS format (must be a key in SYMBOL_MAPPING)
+        """
+        self.name: str = name
+        self.row_type: str = row_type
         self.coefficients: Dict[str, float] = {}
-        self.constraint_type: str = constraint_type
-        self.rhs_value = None
+        self.rhs_value: Optional[float] = 0.0  # Need float since that's what's expected in analysis
 
     def print(self):
-        print(self.name, end=": ")
-        for variable, coefficient in self.coefficients.items():
-            print(f"+ {coefficient} * {variable}", end="\t")
-        print(f"{SYMBOL_MAPPING[self.constraint_type]}\t{self.rhs_value}")  # The print the RHS
+        print(self.name, end=":\t")
+        if self.rhs_value is not None:
+            print(self.rhs_value, end="\t")
+        print(f"{SYMBOL_MAPPING[self.row_type]} ", end="")
+        for var_name, coefficient in self.coefficients.items():
+            if coefficient > 0:
+                print("+", end="")
+            if coefficient == 1:
+                print(f"{var_name}", end="\t")
+            else:
+                print(f"{coefficient}*{var_name}", end="\t")
+        print()
 
 
 class Bound:
-    def __init__(self, name):
+    """A bound on a variable"""
+
+    def __init__(self, name: str):
         self.name = name
         self.lhs_bound = None
         self.rhs_bound = None
@@ -34,102 +48,33 @@ class Bound:
         elif self.lhs_bound is not None:
             print(self.lhs_bound, "<=", self.name)
         else:
-            print("unbounded", self.name)
+            print("unbounded ", self.name)
 
 
 class LPModel:
+    """The linear model. Contains all the rows, variable boounds and objective function."""
+
     def __init__(self):
-        self.objective = None
-        self.rows: Dict[str, ExpressionRow] = {}
+        self.objective: Optional[Row] = None  # Reference to the objective function
+        self.rows: Dict[str, Row] = {}
         self.bounds: Dict[str, Bound] = {}
 
-    def add_row(self, row: ExpressionRow):
-        assert row.name not in self.rows
-        self.rows[row.name] = row
-        if row.constraint_type == "N":
-            self.objective = row
+    def add_row(self, name, row_type):
+        assert name not in self.rows  # Make sure it doesn't already exist (don't want to overwrite)
+        self.rows[name] = Row(name, row_type)
+        if row_type == "N":
+            if self.objective is not None:
+                raise Exception("Can't set objective, it already exists")
+            self.objective = self.rows[name]
+            self.objective.rhs_value = None  # No RHS value for the objective function
 
     def print_model(self):
-        if self.objective is None:
-            print("No objective specified")
-        else:
-            self.objective.print()
-
-        print()
-
-        for constraint in self.rows.values():
-            if constraint.constraint_type == "N":
-                continue
-            constraint.print()
-
+        print("OBJECTIVE")
+        self.objective.print()
+        print("\nCONSTRAINTS")
+        for row in self.rows.values():
+            if row.row_type != "N":
+                row.print()
+        print("\nBOUNDS")
         for bound in self.bounds.values():
             bound.print()
-
-
-class MPSReader:
-    def __init__(self, filename):
-        self.function_to_run = self._do_nothing
-        self.filename = filename
-        self.model: LPModel = LPModel()
-        self.KEY_MAPPING = {
-            "ROWS": self._read_row,
-            "COLUMNS": self._read_column,
-            "RHS": self._read_rhs,
-            "BOUNDS": self._read_bound,
-            "ENDATA": self._do_nothing
-        }
-
-    def read(self):
-        with open(self.filename, "r") as file:
-            lines = file.readlines()
-
-        for line in lines:
-            split_line = line.split()
-            if len(split_line) == 1:
-                self.function_to_run = self.KEY_MAPPING[split_line[0]]
-                continue
-
-            self.function_to_run(split_line)
-
-        assert self.function_to_run(None)
-
-        return self.model
-
-    def _do_nothing(self, line):
-        return True
-
-    def _read_row(self, row: List):
-        self.model.add_row(ExpressionRow(row[1], row[0]))
-
-    def _read_column(self, line: List):
-        for i in range(1, len(line), 2):
-            self.model.rows[line[i]].coefficients[line[0]] = float(line[i + 1])
-
-    def _read_rhs(self, line: List):
-        for i in range(1, len(line), 2):
-            self.model.rows[line[i]].rhs_value = float(line[i + 1])
-
-    def _read_bound(self, line: List):
-        bound_type = line[0]
-        name = line[2]
-        value = float(line[3])
-
-        if name not in self.model.bounds:
-            bound = Bound(name)
-            self.model.bounds[name] = bound
-        else:
-            bound = self.model.bounds[name]
-
-        if bound_type == "UP":
-            bound.rhs_bound = value
-        elif bound_type == "LO":
-            bound.lhs_bound = value
-        else:
-            raise Exception(f"Unknown bound type {bound_type}")
-
-
-def main(filename):
-    start_time = time.time()
-    model = MPSReader(filename).read()
-    print(f"Time taken to read model: {time.time() - start_time}")
-    # model.print_model()
