@@ -1,92 +1,28 @@
-from typing import List, Optional, Dict
-from enum import Enum
+from typing import List, Dict
 import time
 
-
-class CustomLineIteratorDone(Exception):
-    pass
+SYMBOL_MAPPING = {"L": "<=", "G": ">=", "E": "=", "N": "Obj"}
 
 
-class LineIterator:
-    # We don't use isspace() since it is slow.
-    SPACES = (" ", "\n", "\t")
+class ExpressionRow:
+    """A Constraint in the model."""
 
-    def __init__(self):
-        self.line = None
-        self.n = None
-        self.position = None
-        self.start = None # Declare to avoid constantly declaring variables
-
-    def set(self, line):
-        self.position = 0
-        self.line = line
-        self.n = len(line)
-
-    def read_value(self):
-        try:
-            while self.line[self.position] in LineIterator.SPACES:
-                self.position += 1
-
-            self.start = self.position
-
-            while not self.line[self.position] in LineIterator.SPACES:
-                self.position += 1
-
-            return self.line[self.start:self.position]
-        except IndexError:
-            raise CustomLineIteratorDone
-
-
-class Row:
-    """A row in the model (either Objective, Bound or Constraint)"""
-
-    def __init__(self, name=None):
+    def __init__(self, name, constraint_type=None):
         self.name = name
-
-
-class ExpressionRow(Row):
-    """A row with an expression (either Objective or Constraint)"""
-
-    def __init__(self, name):
-        super(ExpressionRow, self).__init__(name)
-        self.coefficients = {}
-
-    def set_variable_coefficient(self, variable_name, value):
-        self.coefficients[variable_name] = value
+        self.coefficients: Dict[str, float] = {}
+        self.constraint_type: str = constraint_type
+        self.rhs_value = None
 
     def print(self):
         print(self.name, end=": ")
         for variable, coefficient in self.coefficients.items():
             print(f"+ {coefficient} * {variable}", end="\t")
+        print(f"{SYMBOL_MAPPING[self.constraint_type]}\t{self.rhs_value}")  # The print the RHS
 
 
-class Objective(ExpressionRow):
-    """The Objective row. For now isn't different from just an ExpressionRow."""
-
+class Bound:
     def __init__(self, name):
-        super(Objective, self).__init__(name)
-
-
-class Constraint(ExpressionRow):
-    """A Constraint in the model."""
-    symbol_mapping = {"L": "<=", "G": ">=", "E": "="}
-
-    def __init__(self, name, constraint_type):
-        super(Constraint, self).__init__(name)
-        self.rhs_value = None
-        self.constraint_type = constraint_type
-
-    def set_rhs(self, value):
-        self.rhs_value = value
-
-    def print(self):
-        super(Constraint, self).print()  # Print the expression
-        print(f"{self.symbol_mapping[self.constraint_type]}\t{self.rhs_value}")  # The print the RHS
-
-
-class Bound(Row):
-    def __init__(self, name):
-        super(Bound, self).__init__(name)
+        self.name = name
         self.lhs_bound = None
         self.rhs_bound = None
 
@@ -104,26 +40,14 @@ class Bound(Row):
 class LPModel:
     def __init__(self):
         self.objective = None
-        self.rows: Dict[ExpressionRow] = {}
-        self.bounds = {}
+        self.rows: Dict[str, ExpressionRow] = {}
+        self.bounds: Dict[str, Bound] = {}
 
     def add_row(self, row: ExpressionRow):
         assert row.name not in self.rows
         self.rows[row.name] = row
-        if isinstance(row, Objective):
+        if row.constraint_type == "N":
             self.objective = row
-
-    def set_bound(self, name, low=None, high=None):
-        if name not in self.bounds:
-            bound = Bound(name)
-            self.bounds[name] = bound
-        else:
-            bound = self.bounds[name]
-        bound.lhs_bound = low
-        bound.rhs_bound = high
-
-    def get_row(self, row_name) -> ExpressionRow:
-        return self.rows[row_name]
 
     def print_model(self):
         if self.objective is None:
@@ -134,7 +58,7 @@ class LPModel:
         print()
 
         for constraint in self.rows.values():
-            if isinstance(constraint, Objective):
+            if constraint.constraint_type == "N":
                 continue
             constraint.print()
 
@@ -142,98 +66,64 @@ class LPModel:
             bound.print()
 
 
-class ReaderState(Enum):
-    INITIAL = 0
-    ROWS = 1
-    COLUMNS = 2
-    RHS = 3
-    BOUNDS = 4
-    DONE = 5
-
-
 class MPSReader:
     def __init__(self, filename):
-        self.state = ReaderState.INITIAL
+        self.function_to_run = self._do_nothing
         self.filename = filename
         self.model: LPModel = LPModel()
+        self.KEY_MAPPING = {
+            "ROWS": self._read_row,
+            "COLUMNS": self._read_column,
+            "RHS": self._read_rhs,
+            "BOUNDS": self._read_bound,
+            "ENDATA": self._do_nothing
+        }
 
     def read(self):
         with open(self.filename, "r") as file:
-            iterator = LineIterator()
-            for line in file:
-                iterator.set(line)
-                if self.state == ReaderState.INITIAL:
-                    if line == "ROWS\n":
-                        self.state = ReaderState.ROWS
-                elif self.state == ReaderState.ROWS:
-                    if line == "COLUMNS\n":
-                        self.state = ReaderState.COLUMNS
-                    else:
-                        self._read_row(iterator)
-                elif self.state == ReaderState.COLUMNS:
-                    if line == "RHS\n":
-                        self.state = ReaderState.RHS
-                    else:
-                        self._read_column(iterator)
-                elif self.state == ReaderState.RHS:
-                    if line == "BOUNDS\n":
-                        self.state = ReaderState.BOUNDS
-                    else:
-                        self._read_rhs(iterator)
-                elif self.state == ReaderState.BOUNDS:
-                    if line == "ENDATA\n" or line == "ENDATA":
-                        self.state = ReaderState.DONE
-                    else:
-                        self._read_bound(iterator)
-                else:
-                    raise Exception(f"Unknown state {self.state}")
+            lines = file.readlines()
 
-        assert self.state == ReaderState.DONE
+        for line in lines:
+            split_line = line.split()
+            if len(split_line) == 1:
+                self.function_to_run = self.KEY_MAPPING[split_line[0]]
+                continue
+
+            self.function_to_run(split_line)
+
+        assert self.function_to_run(None)
 
         return self.model
 
-    def _read_row(self, row: LineIterator):
-        row_type = row.read_value()
-        name = row.read_value()
-        if row_type == "N":
-            if self.model.objective is not None:
-                raise Exception("Objective function already defined")
-            self.model.add_row(Objective(name))
+    def _do_nothing(self, line):
+        return True
+
+    def _read_row(self, row: List):
+        self.model.add_row(ExpressionRow(row[1], row[0]))
+
+    def _read_column(self, line: List):
+        for i in range(1, len(line), 2):
+            self.model.rows[line[i]].coefficients[line[0]] = float(line[i + 1])
+
+    def _read_rhs(self, line: List):
+        for i in range(1, len(line), 2):
+            self.model.rows[line[i]].rhs_value = float(line[i + 1])
+
+    def _read_bound(self, line: List):
+        bound_type = line[0]
+        name = line[2]
+        value = float(line[3])
+
+        if name not in self.model.bounds:
+            bound = Bound(name)
+            self.model.bounds[name] = bound
         else:
-            self.model.add_row(Constraint(name, row_type))
-
-    def _read_column(self, line: LineIterator):
-        var_name = line.read_value()
-
-        while True:
-            try:
-                row_name = line.read_value()
-            except CustomLineIteratorDone:
-                break
-            value = line.read_value()
-            self.model.get_row(row_name).set_variable_coefficient(var_name, value)
-
-    def _read_rhs(self, line: LineIterator):
-        line.read_value()  # First element is useless
-
-        while True:
-            try:
-                row_name = line.read_value()
-            except CustomLineIteratorDone:
-                break
-            value = line.read_value()
-            self.model.get_row(row_name).rhs_value = value
-
-    def _read_bound(self, line: LineIterator):
-        bound_type = line.read_value()
-        line.read_value()  # Second value can be dropped
-        name = line.read_value()
-        value = line.read_value()
+            bound = self.model.bounds[name]
 
         if bound_type == "UP":
-            self.model.set_bound(name, high=value)
+            bound.rhs_bound = value
         elif bound_type == "LO":
-            self.model.set_bound(name, low=value)
+            bound.lhs_bound = value
         else:
             raise Exception(f"Unknown bound type {bound_type}")
 
@@ -242,4 +132,4 @@ def main(filename):
     start_time = time.time()
     model = MPSReader(filename).read()
     print(f"Time taken to read model: {time.time() - start_time}")
-    model.print_model()
+    # model.print_model()
