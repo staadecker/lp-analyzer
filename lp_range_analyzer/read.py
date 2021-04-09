@@ -30,6 +30,7 @@ class MPSReader:
 
     def read(self):
         start_time = time.time()
+        print("Reading MPS file...")
         # Open the file and save the rows to 'lines'
         # This is faster than "for line in file:".
         with open(self.filename, "r") as file:

@@ -74,7 +74,7 @@ def anaylze_rhs(model):
         print("Full min rhs row is: ", end="")
         min_row.print()
 
-    return [["RHS", min_rhs, max_rhs, None]]
+    return [["RHS min", min_rhs, None, min_row.name], ["RHS Max", None, max_rhs, max_row.name]]
 
 
 def anaylze_bounds(model):
@@ -98,8 +98,8 @@ def anaylze_bounds(model):
         print("Full min bound row is: ", end="")
         min_bound.print()
 
-    return [["Max Bound", max_bound.lhs_bound, max_bound.rhs_bound, max_bound.name],
-            ["Min Bound", min_bound.lhs_bound, min_bound.rhs_bound, min_bound.name]]
+    return [["Min Bound", min_bound.lhs_bound, min_bound.rhs_bound, min_bound.name],
+            ["Max Bound", max_bound.lhs_bound, max_bound.rhs_bound, max_bound.name]]
 
 
 class AnalyzeVariable:
@@ -156,6 +156,7 @@ def analyze_by_variable_type(model):
 
 
 def full_analysis(model):
+    # Analyze the main groups
     table = []
     table.extend(analyze_objective_range(model))
     table.extend(analyze_coefficient_range(model))
@@ -164,4 +165,5 @@ def full_analysis(model):
 
     print(tabulate(table, headers=["Type", "Min", "Max", "Var"], tablefmt="github", floatfmt=".2"), end="\n\n")
 
+    # Analyze by variable
     analyze_by_variable_type(model)
