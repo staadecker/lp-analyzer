@@ -1,7 +1,12 @@
+"""
+Provides the class MPSReader which allows reading an .mps linear programming model.
+https://en.wikipedia.org/wiki/MPS_(format)
+"""
 from typing import List
-
-from lp_range_analyzer import LPModel, Bound
 import time
+
+from lp_range_analyzer.core import Bound, LPModel
+
 
 class MPSReader:
     """

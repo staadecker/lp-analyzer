@@ -74,7 +74,7 @@ def anaylze_rhs(model):
         print("Full min rhs row is: ", end="")
         min_row.print()
 
-    return [["RHS min", min_rhs, None, min_row.name], ["RHS Max", None, max_rhs, max_row.name]]
+    return [["RHS min", min_rhs, None, min_row.row_name], ["RHS Max", None, max_rhs, max_row.row_name]]
 
 
 def anaylze_bounds(model):
@@ -151,11 +151,48 @@ def analyze_by_variable_type(model):
     for var in all_vars.values():
         table.append(var.get_table_row())
 
-    print(tabulate(table, headers=["Var Name", "Min coef", "Max coef", "Min Bound", "Max bound"], tablefmt="github",
-                   floatfmt=".2"))
+    out = tabulate(table, headers=["Var Name", "Min coef", "Max coef", "Min Bound", "Max bound"], tablefmt="github",
+                 floatfmt=".2")
+    return out
+
+class AnalyzeRow:
+    def __init__(self, name):
+        self.name = name
+        self.min_rhs = float('inf')
+        self.max_rhs = 0
+        self.min_coef = float('inf')
+        self.max_coef = 0
+
+    def get_table_row(self):
+        return [self.name, self.min_coef, self.max_coef, self.min_rhs, self.max_rhs]
+
+def analyze_by_row_type(model):
+    all_rows = {}
+    for row in model.rows.values():
+        row_name = row.row_name[:row.row_name.find("(")]  # Drop the index
+        min_coef, max_coef = row.coefficient_range()
+        if row_name in all_rows:
+            analyze_row = all_rows[row_name]
+        else:
+            analyze_row = AnalyzeRow(row_name)
+            all_rows[row_name] = analyze_row
+        analyze_row.min_coef = min(analyze_row.min_coef, min_coef)
+        analyze_row.max_coef = max(analyze_row.max_coef, max_coef)
+        if row.rhs_value is not None:
+            analyze_row.min_rhs = min(analyze_row.min_rhs, abs(row.rhs_value))
+            analyze_row.max_rhs = max(analyze_row.max_rhs, abs(row.rhs_value))
+
+    table = []
+
+    for row in all_rows.values():
+        table.append(row.get_table_row())
+
+    out = tabulate(table, headers=["Row Name", "Min coef", "Max coef", "Min RHS", "Max RHS"], tablefmt="github",
+                   floatfmt=".2")
+    return out
 
 
-def full_analysis(model):
+def full_analysis(model, outfile):
     # Analyze the main groups
     table = []
     table.extend(analyze_objective_range(model))
@@ -163,7 +200,19 @@ def full_analysis(model):
     table.extend(anaylze_rhs(model))
     table.extend(anaylze_bounds(model))
 
-    print(tabulate(table, headers=["Type", "Min", "Max", "Var"], tablefmt="github", floatfmt=".2"), end="\n\n")
+    output = tabulate(table, headers=["Type", "Min", "Max", "Var"], tablefmt="github", floatfmt=".2")
+    output += "\n\n"
 
     # Analyze by variable
-    analyze_by_variable_type(model)
+    output += analyze_by_variable_type(model)
+    output += "\n\n"
+
+    # Analyze by row type
+    output += analyze_by_row_type(model)
+
+    print(output)
+
+    if outfile is not None:
+        with open(outfile, "w") as f:
+            f.write(output)
+

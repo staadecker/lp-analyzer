@@ -1,14 +1,20 @@
 import argparse
-from lp_range_analyzer.read import MPSReader
+from lp_range_analyzer.reader import MPSReader
 from lp_range_analyzer.analyze import full_analysis
 
 
 def main():
+    # Parse command line input
     parser = argparse.ArgumentParser()
-    parser.add_argument("filename", type=str, help="Path of file to read")
+    parser.add_argument("input_file", type=str, help="Path of file to read")
+    parser.add_argument("-o", "--output-file", type=str, help="Path of file to write the results to", default=None)
     args = parser.parse_args()
-    model = MPSReader(args.filename).read()
-    full_analysis(model)
+
+    # Read input file and load into Model object
+    model = MPSReader(args.input_file).read()
+
+    # Analyze the model
+    full_analysis(model, args.output_file)
 
 
 if __name__ == '__main__':
