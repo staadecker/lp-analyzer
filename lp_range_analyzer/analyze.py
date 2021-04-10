@@ -2,110 +2,185 @@
 Provides functions to analyze a Model.
 """
 from tabulate import tabulate
+from typing import Dict, List
 
 
-class AnalyzeVariable:
+class TableRow:
+    """A statistic that represents one row of an output table."""
+
+    def get_table_row(self):
+        raise NotImplemented
+
+    def get_table_header(self):
+        raise NotImplemented
+
+
+def make_table(rows: List[TableRow]):
+    return tabulate(
+        list(map(lambda r: r.get_table_row(), rows)),
+        headers=rows[0].get_table_header(),
+        tablefmt="github",
+        floatfmt=".2"
+    )
+
+
+class VariableStat(TableRow):
     def __init__(self, name):
         self.name = name
         self.min_coef = float('inf')
         self.max_coef = 0
         self.min_bound = float('inf')
         self.max_bound = 0
+        self.min_coef_index = None
+        self.max_coef_index = None
+        self.min_bound_index = None
+        self.max_bound_index = None
+
+    def update_coef(self, val, ext):
+        val = abs(val)
+        if val < self.min_coef:
+            self.min_coef = val
+            self.min_coef_index = ext
+
+        if val > self.max_coef:
+            self.max_coef = val
+            self.max_coef_index = ext
+
+    def update_bound(self, val, ext):
+        if val is None or val == 0:
+            return
+        val = abs(val)
+        if val < self.min_bound:
+            self.min_bound = val
+            self.min_bound_index = ext
+
+        if val > self.max_bound:
+            self.max_bound = val
+            self.max_bound_index = ext
 
     def __str__(self):
         return self.name + "\t" + str(self.min_coef) + "\t" + str(self.max_coef) + "\t" + str(
             self.min_bound) + "\t" + str(self.max_bound)
 
     def get_table_row(self):
-        return [self.name, self.min_coef, self.max_coef, self.min_bound, self.max_bound]
+        return [self.name, self.min_coef, self.max_coef, self.min_bound, self.max_bound,
+                self.min_coef_index, self.max_coef_index, self.min_bound_index, self.max_bound_index]
+
+    def get_table_header(self):
+        return ["Var Name", "Min coef", "Max coef", "Min Bound", "Max bound",
+                "Index", "Index", "Index", "Index"]
 
 
-class AnalyzeRow:
+class RowStat(TableRow):
     def __init__(self, name):
         self.name = name
+        self.min_coef_ext = None
+        self.max_coef_ext = None
+        self.min_rhs_ext = None
+        self.max_rhs_ext = None
         self.min_rhs = float('inf')
         self.max_rhs = 0
         self.min_coef = float('inf')
         self.max_coef = 0
 
+    def update_rhs(self, val, ext):
+        if val is None:
+            return
+        if val < self.min_rhs:
+            self.min_rhs = val
+            self.min_rhs_ext = ext
+        if val > self.max_rhs:
+            self.max_rhs = val
+            self.max_rhs_ext = ext
+
+    def update_min_coef(self, val, ext):
+        if val < self.min_coef:
+            self.min_coef = val
+            self.min_coef_ext = ext
+
+    def update_max_coef(self, val, ext):
+        if val > self.max_coef:
+            self.max_coef = val
+            self.max_coef_ext = ext
+
     def get_table_row(self):
-        return [self.name, self.min_coef, self.max_coef, self.min_rhs, self.max_rhs]
+        return [
+            self.name,
+            self.min_coef,
+            self.max_coef,
+            self.min_rhs,
+            self.max_rhs,
+            self.min_coef_ext,
+            self.max_coef_ext,
+            self.min_rhs_ext,
+            self.max_rhs_ext
+        ]
+
+    def get_table_header(self):
+        return ["Row Name", "Min coef", "Max coef", "Min RHS", "Max RHS", "Index", "Index", "Index", "Index"]
 
 
-def analyze_by_variable_type(model):
-    all_vars = {}
+def get_variable_stats(model):
+    var_stats = {}
     for row in model.rows.values():
         for var_name, coef in row.coefficients.items():
-            var_name = var_name[:var_name.find("(")]  # Drop the index
-            coef = abs(coef)
-            if var_name in all_vars:
-                var = all_vars[var_name]
-            else:
-                var = AnalyzeVariable(var_name)
-                all_vars[var_name] = var
-            var.min_coef = min(var.min_coef, coef)
-            var.max_coef = max(var.max_coef, coef)
+            var_name, var_index = split_type_and_index(var_name)
+
+            try:
+                var_stat = var_stats[var_name]
+            except KeyError:
+                var_stat = VariableStat(var_name)
+                var_stats[var_name] = var_stat
+
+            var_stat.update_coef(coef, var_index)
 
     for bound in model.bounds.values():
-        var_name = bound.name[:bound.name.find("(")]
-        if var_name in all_vars:
-            var = all_vars[var_name]
-        else:
-            var = AnalyzeVariable(var_name)
-            all_vars[var_name] = var
-        for limit in [bound.lhs_bound, bound.rhs_bound]:
-            if limit is None or limit == 0:
-                continue
-            limit = abs(limit)
-            var.min_bound = min(var.min_bound, limit)
-            var.max_bound = max(var.max_bound, limit)
+        var_name, var_index = split_type_and_index(bound.name)
 
-    table = []
+        try:
+            var_stat = var_stats[var_name]
+        except KeyError:
+            var_stat = VariableStat(var_name)
+            var_stats[var_name] = var_stat
 
-    for var in all_vars.values():
-        table.append(var.get_table_row())
+        var_stat.update_bound(bound.lhs_bound, var_index)
+        var_stat.update_bound(bound.rhs_bound, var_index)
 
-    out = tabulate(table, headers=["Var Name", "Min coef", "Max coef", "Min Bound", "Max bound"], tablefmt="github",
-                 floatfmt=".2")
-    return out
+    return list(var_stats.values())
 
-def analyze_by_row_type(model):
-    all_rows = {}
-    for row in model.rows.values():
-        row_name = row.row_name[:row.row_name.find("(")]  # Drop the index
+
+def get_row_stats(model):
+    row_stats: Dict[str, RowStat] = {}
+    for full_name, row in model.rows.items():
+        row_name, row_index = split_type_and_index(full_name)
         min_coef, max_coef = row.coefficient_range()
-        if row_name in all_rows:
-            analyze_row = all_rows[row_name]
-        else:
-            analyze_row = AnalyzeRow(row_name)
-            all_rows[row_name] = analyze_row
-        analyze_row.min_coef = min(analyze_row.min_coef, min_coef)
-        analyze_row.max_coef = max(analyze_row.max_coef, max_coef)
-        if row.rhs_value is not None:
-            analyze_row.min_rhs = min(analyze_row.min_rhs, abs(row.rhs_value))
-            analyze_row.max_rhs = max(analyze_row.max_rhs, abs(row.rhs_value))
 
-    table = []
+        try:
+            row_stat = row_stats[row_name]
+        except KeyError:
+            row_stat = RowStat(row_name)
+            row_stats[row_name] = row_stat
 
-    for row in all_rows.values():
-        table.append(row.get_table_row())
+        row_stat.update_min_coef(min_coef, row_index)
+        row_stat.update_max_coef(max_coef, row_index)
+        row_stat.update_rhs(row.rhs_value, row_index)
 
-    out = tabulate(table, headers=["Row Name", "Min coef", "Max coef", "Min RHS", "Max RHS"], tablefmt="github",
-                   floatfmt=".2")
-    return out
+    return list(row_stats.values())
+
+
+def split_type_and_index(name):
+    row_type, _, index = name.partition("(")
+    index = index[:index.find(")")]
+    return row_type, index
 
 
 def full_analysis(model, outfile):
-    # Analyze by variable
-    output = analyze_by_variable_type(model)
-    output += "\n\n"
+    var_stats = get_variable_stats(model)
+    row_stats = get_row_stats(model)
 
-    # Analyze by row type
-    output += analyze_by_row_type(model)
-
-    print(output)
+    str_output = make_table(var_stats) + "\n\n" + make_table(row_stats)
+    print(str_output)
 
     if outfile is not None:
         with open(outfile, "w") as f:
-            f.write(output)
-
+            f.write(str_output)
