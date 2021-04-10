@@ -3,10 +3,11 @@ Provides functions to analyze a Model.
 """
 from tabulate import tabulate
 from typing import Dict, List
+import time
 
 
 class TableRow:
-    """A statistic that represents one row of an output table."""
+    """A row that can be printed as part of a table."""
 
     def get_table_row(self):
         raise NotImplemented
@@ -68,7 +69,7 @@ class VariableStat(TableRow):
 
     def get_table_header(self):
         return ["Var Name", "Min coef", "Max coef", "Min Bound", "Max bound",
-                "Index", "Index", "Index", "Index"]
+                "Min coef index", "Max coef index", "Min bound index", "Max bound index"]
 
 
 class RowStat(TableRow):
@@ -117,7 +118,8 @@ class RowStat(TableRow):
         ]
 
     def get_table_header(self):
-        return ["Row Name", "Min coef", "Max coef", "Min RHS", "Max RHS", "Index", "Index", "Index", "Index"]
+        return ["Row Name", "Min coef", "Max coef", "Min RHS", "Max RHS",
+                "Min coef index", "Max coef index", "Min RHS index", "Max RHS index"]
 
 
 def get_variable_stats(model):
@@ -175,10 +177,12 @@ def split_type_and_index(name):
 
 
 def full_analysis(model, outfile):
+    start_time = time.time()
     var_stats = get_variable_stats(model)
     row_stats = get_row_stats(model)
 
-    str_output = make_table(var_stats) + "\n\n" + make_table(row_stats)
+    str_output = f"Analyzed model in {(time.time() - start_time):.2f} s.\n"
+    str_output += make_table(var_stats) + "\n\n" + make_table(row_stats)
     print(str_output)
 
     if outfile is not None:
