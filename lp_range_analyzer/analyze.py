@@ -21,7 +21,7 @@ def make_table(rows: List[TableRow]):
         list(map(lambda r: r.get_table_row(), rows)),
         headers=rows[0].get_table_header(),
         tablefmt="github",
-        floatfmt=".2"
+        floatfmt=".1"
     )
 
 
