@@ -92,6 +92,11 @@ class MPSReader:
 
         # The first element in the bounds section is the bound type
         bound_type = line[0]
+
+        # FR indicates a free variable so no bounds
+        if bound_type == "FR":
+            return
+
         # The second element is not important
         # The third is the variable on which the bound applies
         name = line[2]

@@ -15,10 +15,18 @@ class TableRow:
     def get_table_header(self):
         raise NotImplemented
 
+    def get_formatted_table_row(self):
+        row = self.get_table_row()
+        for i, val in enumerate(row):
+            if val == 0 or val == float("inf"):
+                row[i] = ""
+
+        return row
+
 
 def make_table(rows: List[TableRow]):
     return tabulate(
-        list(map(lambda r: r.get_table_row(), rows)),
+        list(map(lambda r: r.get_formatted_table_row(), rows)),
         headers=rows[0].get_table_header(),
         tablefmt="github",
         floatfmt=".1"
@@ -87,6 +95,7 @@ class RowStat(TableRow):
     def update_rhs(self, val, ext):
         if val is None:
             return
+        val = abs(val)
         if val < self.min_rhs:
             self.min_rhs = val
             self.min_rhs_ext = ext

@@ -63,7 +63,9 @@ class Row:
 
     def coefficient_range(self):
         absolute_coefficients = list(map(abs, self.coefficients.values()))
-        return min(absolute_coefficients), max(absolute_coefficients)
+        if absolute_coefficients:
+            return min(absolute_coefficients), max(absolute_coefficients)
+        return float("inf"), 0
 
 
 class Bound:
