@@ -111,5 +111,8 @@ class MPSReader:
             bound.rhs_bound = value
         elif bound_type == "LO":
             bound.lhs_bound = value
+        elif bound_type == "FX":
+            bound.lhs_bound = value
+            bound.rhs_bound = value
         else:
             raise Exception(f"Unknown bound type {bound_type}")
