@@ -21,6 +21,7 @@ class LPModel:
                 raise Exception("Can't set objective, it already exists")
             self.objective = self.rows[row_name]
             self.objective.rhs_value = None  # No RHS value for the objective function
+            self.rows[row_name].is_objective = True
 
     def print_model(self):
         print("OBJECTIVE")
@@ -46,6 +47,7 @@ class Row:
         self.row_type: str = row_type
         self.coefficients: Dict[str, float] = {}
         self.rhs_value: Optional[float] = 0.0  # Need float since that's what's expected in analysis
+        self.is_objective: bool = False  # Can be overidden after creation
 
     def print(self):
         print(self.row_name, end=":\t")
@@ -62,19 +64,19 @@ class Row:
         print()
 
     def coefficient_range(self):
-        absolute_coefficients = list(map(abs, self.coefficients.values()))
+        absolute_coefficients = list(map(lambda k_v: (k_v[0], abs(k_v[1])), self.coefficients.items()))
         if absolute_coefficients:
-            return min(absolute_coefficients), max(absolute_coefficients)
-        return float("inf"), 0
+            return min(absolute_coefficients, key=lambda k_v: k_v[1]), max(absolute_coefficients, key=lambda k_v: k_v[1])
+        return (float("inf"), None), (0, None)
 
 
 class Bound:
     """A bound on a variable"""
 
     def __init__(self, name: str):
-        self.name = name
-        self.lhs_bound = None
-        self.rhs_bound = None
+        self.name: str = name
+        self.lhs_bound: Optional[float] = None
+        self.rhs_bound: Optional[float] = None
 
     def print(self):
         if self.lhs_bound is not None and self.rhs_bound is not None:

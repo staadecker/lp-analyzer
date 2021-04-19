@@ -4,6 +4,7 @@ Provides functions to analyze a Model.
 from tabulate import tabulate
 from typing import Dict, List
 import time
+import math
 
 
 class TableRow:
@@ -41,6 +42,8 @@ class VariableStat(TableRow):
     - Maximum coefficient for that variable
     - Minimum bound for that variable
     - Maximum bound for that variable
+    - Geometric mean of upper bound and number of upper bounds
+    - Geometric mean of lower bounds and number of lower bounds
     """
     def __init__(self, name):
         self.name = name
@@ -52,6 +55,10 @@ class VariableStat(TableRow):
         self.max_coef_index = None
         self.min_bound_index = None
         self.max_bound_index = None
+        self.geom_lower_count = 0
+        self.geom_lower_sum = 0
+        self.geom_upper_count = 0
+        self.geom_upper_sum = 0
 
     def update_coef(self, val, ext):
         val = abs(val) # We only care about magnitude of coefficients
@@ -66,13 +73,7 @@ class VariableStat(TableRow):
             self.max_coef = val
             self.max_coef_index = ext
 
-    def update_bound(self, val, ext):
-        # If the bound is None or 0 skip it
-        if val is None or val == 0:
-            return
-        # We only care about bound magnitude
-        val = abs(val)
-
+    def update_bound_min_max(self, val, ext):
         # If bound is less than min update min
         if val < self.min_bound:
             self.min_bound = val
@@ -83,19 +84,49 @@ class VariableStat(TableRow):
             self.max_bound = val
             self.max_bound_index = ext
 
+    def update_lower_bound(self, val, ext):
+        # If the bound is None or 0 skip it
+        if val is None or val == 0:
+            return
+
+        # We only care about bound magnitude
+        val = abs(val)
+
+        self.update_bound_min_max(val, ext)
+
+        self.geom_lower_count += 1
+        self.geom_lower_sum += math.log(val)
+
+    def update_upper_bound(self, val, ext):
+        # If the bound is None or 0 skip it
+        if val is None or val == 0:
+            return
+
+        # We only care about bound magnitude
+        val = abs(val)
+
+        self.update_bound_min_max(val, ext)
+
+        self.geom_upper_count += 1
+        self.geom_upper_sum += math.log(val)
+
     def __str__(self):
         return self.name + "\t" + str(self.min_coef) + "\t" + str(self.max_coef) + "\t" + str(
             self.min_bound) + "\t" + str(self.max_bound)
 
     def get_table_row(self):
+        # Calculate the geometric mean for the upper and lower bounds.
+        lower_mean = None if self.geom_lower_count == 0 else math.exp(self.geom_lower_sum / self.geom_lower_count)
+        upper_mean = None if self.geom_upper_count == 0 else math.exp(self.geom_upper_sum / self.geom_upper_count)
         return [self.name, self.min_coef, self.max_coef, self.min_bound, self.max_bound,
-                self.min_coef_index, self.max_coef_index, self.min_bound_index, self.max_bound_index]
+                self.min_coef_index, self.max_coef_index, self.min_bound_index, self.max_bound_index,
+                self.geom_lower_count, lower_mean, self.geom_upper_count, upper_mean]
 
     @staticmethod
     def get_table_header():
         return ["Var Name", "Min coef", "Max coef", "Min Bound", "Max bound",
-                "Min coef index", "Max coef index", "Min bound index", "Max bound index"]
-
+                "Min coef index", "Max coef index", "Min bound index", "Max bound index",
+                "Lower Bound Count", "Lower Bound Geometric Mean", "Upper bound count", "Upper bound geometric mean"]
 
 class ConstraintStat(TableRow):
     """
@@ -160,6 +191,9 @@ class ConstraintStat(TableRow):
 def get_variable_stats(model):
     var_stats = {}
     for row in model.rows.values():
+        # Skip the objective, we want values only in the matrix
+        if row.is_objective:
+            continue
         for var_name, coef in row.coefficients.items():
             var_name, var_index = split_type_and_index(var_name)
 
@@ -180,8 +214,8 @@ def get_variable_stats(model):
             var_stat = VariableStat(var_name)
             var_stats[var_name] = var_stat
 
-        var_stat.update_bound(bound.lhs_bound, var_index)
-        var_stat.update_bound(bound.rhs_bound, var_index)
+        var_stat.update_lower_bound(bound.lhs_bound, var_index)
+        var_stat.update_upper_bound(bound.rhs_bound, var_index)
 
     return list(var_stats.values())
 
@@ -189,8 +223,10 @@ def get_variable_stats(model):
 def get_constraint_stats(model):
     row_stats: Dict[str, ConstraintStat] = {}
     for full_name, row in model.rows.items():
+        min_pair, max_pair = row.coefficient_range()
+        min_var, min_coef = min_pair
+        max_var, max_coef = max_pair
         row_name, row_index = split_type_and_index(full_name)
-        min_coef, max_coef = row.coefficient_range()
 
         try:
             row_stat = row_stats[row_name]
@@ -198,9 +234,13 @@ def get_constraint_stats(model):
             row_stat = ConstraintStat(row_name)
             row_stats[row_name] = row_stat
 
-        row_stat.update_min_coef(min_coef, row_index)
-        row_stat.update_max_coef(max_coef, row_index)
-        row_stat.update_rhs(row.rhs_value, row_index)
+        if not row.is_objective:
+            row_stat.update_min_coef(min_coef, row_index)
+            row_stat.update_max_coef(max_coef, row_index)
+            row_stat.update_rhs(row.rhs_value, row_index)
+        else:
+            row_stat.update_min_coef(min_coef, min_var)
+            row_stat.update_max_coef(max_coef, max_var)
 
     return list(row_stats.values())
 
@@ -212,6 +252,7 @@ def split_type_and_index(name):
 
 
 def full_analysis(model, outfile):
+    print("Analyzing model...")
     start_time = time.time()
     var_stats = get_variable_stats(model)
     constraint_stats = get_constraint_stats(model)
