@@ -1,6 +1,7 @@
 # Developer documentation
 
-Here is the role of each file in this folder.
+This folder contains the source code for this library. 
+Here's an overview of the role of each file in this folder.
 
 1. `__init__.py` is empty and simply indicates that this folder
 is a Python package.
@@ -10,8 +11,8 @@ Notably, `LPModel`, `Row` and `Bound` which represent the
    linear model, a row in the model, and a single variable bound,
    respectively.
    
-3. `reader.py` defines `MPSReader`. `MPSReader(filename).read()` will
-read the provided `.mps` file and return a `LPModel` object.
+3. `reader.py` defines `MPSReader`, a class used to a model
+   from an `.mps` file and return an instance of `LPModel`.
    
 4. `analyze.py` contains `full_analysis(...)` which will output
 different information useful for debugging numerical issues.

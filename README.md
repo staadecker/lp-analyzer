@@ -1,4 +1,4 @@
-# Linear programming numerical issue debugger
+# Debugger for numerical issues in linear programming
 
 This tool helps resolve numerical issues in a linear programming
 model. I developed it will doing research for the [REAM Research Lab](https://patyhidalgo.github.io/)
@@ -54,7 +54,7 @@ Once you have your `.mps` file simply run:
 
 `python -m lp_range_analyzer path/to/file.mps`
 
-The relevant ranges will be automatically printed! Here's an example.
+The relevant ranges will be automatically printed!
 
 
 
