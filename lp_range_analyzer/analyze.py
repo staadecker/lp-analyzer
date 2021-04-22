@@ -30,7 +30,7 @@ def make_table(rows: List[TableRow]):
         headers=rows[0].get_table_header(),
         # Specify how the table should look, notably 1 significant digit.
         tablefmt="github",
-        floatfmt=".1"
+        floatfmt=".2"
     )
 
 
@@ -203,7 +203,7 @@ def get_variable_stats(model):
                 var_stat = VariableStat(var_name)
                 var_stats[var_name] = var_stat
 
-            var_stat.update_coef(coef, var_index)
+            var_stat.update_coef(coef, row.row_name)
 
     for bound in model.bounds.values():
         var_name, var_index = split_type_and_index(bound.name)
@@ -234,13 +234,9 @@ def get_constraint_stats(model):
             row_stat = ConstraintStat(row_name)
             row_stats[row_name] = row_stat
 
-        if not row.is_objective:
-            row_stat.update_min_coef(min_coef, row_index)
-            row_stat.update_max_coef(max_coef, row_index)
-            row_stat.update_rhs(row.rhs_value, row_index)
-        else:
-            row_stat.update_min_coef(min_coef, min_var)
-            row_stat.update_max_coef(max_coef, max_var)
+        row_stat.update_min_coef(min_coef, min_var)
+        row_stat.update_max_coef(max_coef, max_var)
+        row_stat.update_rhs(row.rhs_value, row_index)
 
     return list(row_stats.values())
 
