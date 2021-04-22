@@ -6,6 +6,8 @@ from typing import Dict, List
 import time
 import math
 
+include_obj_coef = False
+
 
 class TableRow:
     """A row that can be printed as part of a table."""
@@ -21,16 +23,24 @@ class TableRow:
         """
         Gets the row and if a cell is 0 or inf, replace it with an empty string.
         """
-        return map(lambda c: "" if c == 0 or c == float("inf") else c, self.get_table_row())
+
+        def format_cell(c):
+            if c == float("inf") or c == 0:
+                return ""
+            elif type(c) == float or type(c) == int:
+                return f"{c:.1e}"
+            else:
+                return c
+
+        return map(format_cell, self.get_table_row())
 
 
 def make_table(rows: List[TableRow]):
     return tabulate(
         map(lambda r: r.get_formatted_table_row(), rows),
         headers=rows[0].get_table_header(),
-        # Specify how the table should look, notably 1 significant digit.
         tablefmt="github",
-        floatfmt=".2"
+        disable_numparse=True  # Parsing is done upstream
     )
 
 
@@ -192,7 +202,7 @@ def get_variable_stats(model):
     var_stats = {}
     for row in model.rows.values():
         # Skip the objective, we want values only in the matrix
-        if row.is_objective:
+        if row.is_objective and not include_obj_coef:
             continue
         for var_name, coef in row.coefficients.items():
             var_name, var_index = split_type_and_index(var_name)
