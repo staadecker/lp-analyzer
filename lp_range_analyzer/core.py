@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 # Mapping of row types to user friendly outputs. Used when printing rows.
 # RHS values are on the left, hence why >= and <= are flipped.
@@ -63,11 +63,14 @@ class Row:
                 print(f"{coefficient}*{var_name}", end="\t")
         print()
 
-    def coefficient_range(self):
+    def coefficient_range(self) -> Tuple[Tuple[Optional[str], float], Tuple[Optional[str], float]]:
+        """
+        Returns two tuples containing the name and value of the minimum and maximum coefficient for this row.
+        """
         absolute_coefficients = list(map(lambda k_v: (k_v[0], abs(k_v[1])), self.coefficients.items()))
         if absolute_coefficients:
             return min(absolute_coefficients, key=lambda k_v: k_v[1]), max(absolute_coefficients, key=lambda k_v: k_v[1])
-        return (float("inf"), None), (0, None)
+        return (None, float("inf")), (None, 0)
 
 
 class Bound:
