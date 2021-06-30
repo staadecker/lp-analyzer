@@ -67,7 +67,8 @@ class Row:
         """
         Returns two tuples containing the name and value of the minimum and maximum coefficient for this row.
         """
-        absolute_coefficients = list(map(lambda k_v: (k_v[0], abs(k_v[1])), self.coefficients.items()))
+        absolute_coefficients = tuple(
+            filter(lambda k_v: k_v[1] != 0, map(lambda k_v: (k_v[0], abs(k_v[1])), self.coefficients.items())))
         if absolute_coefficients:
             return min(absolute_coefficients, key=lambda k_v: k_v[1]), max(absolute_coefficients, key=lambda k_v: k_v[1])
         return (None, float("inf")), (None, 0)
