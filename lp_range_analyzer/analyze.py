@@ -128,6 +128,9 @@ class VariableStat(TableRow):
         # Calculate the geometric mean for the upper and lower bounds.
         lower_mean = None if self.geom_lower_count == 0 else math.exp(self.geom_lower_sum / self.geom_lower_count)
         upper_mean = None if self.geom_upper_count == 0 else math.exp(self.geom_upper_sum / self.geom_upper_count)
+        if (self.min_coef, self.min_coef_index) == (self.max_coef, self.max_coef_index):
+            self.min_coef = "--"
+            self.min_coef_index = "--"
         return [self.name, self.min_coef, self.max_coef, self.min_bound, self.max_bound,
                 self.min_coef_index, self.max_coef_index, self.min_bound_index, self.max_bound_index,
                 self.geom_lower_count, lower_mean, self.geom_upper_count, upper_mean]
@@ -180,6 +183,12 @@ class ConstraintStat(TableRow):
             self.max_coef_ext = ext
 
     def get_table_row(self):
+        if (self.min_coef, self.min_coef_ext) == (self.max_coef, self.max_coef_ext):
+            self.min_coef = "--"
+            self.min_coef_ext = "--"
+        if (self.min_rhs, self.min_rhs_ext) == (self.max_rhs, self.max_rhs_ext):
+            self.min_rhs = "--"
+            self.min_rhs_ext = "--"
         return [
             self.name,
             self.min_coef,
