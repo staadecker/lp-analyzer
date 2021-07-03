@@ -6,6 +6,8 @@ from typing import Dict, List
 import time
 import math
 
+from lp_range_analyzer.core import LPModel
+
 include_obj_coef = False
 
 
@@ -27,7 +29,7 @@ class TableRow:
         def format_cell(c):
             if c == float("inf") or c == 0:
                 return ""
-            elif type(c) == float or type(c) == int:
+            elif type(c) == float:
                 return f"{c:.1e}"
             else:
                 return c
@@ -69,6 +71,8 @@ class VariableStat(TableRow):
         self.geom_lower_sum = 0
         self.geom_upper_count = 0
         self.geom_upper_sum = 0
+        self.indexes = set()
+        self.count = 0
 
     def update_coef(self, val, ext):
         val = abs(val) # We only care about magnitude of coefficients
@@ -131,13 +135,13 @@ class VariableStat(TableRow):
         if (self.min_coef, self.min_coef_index) == (self.max_coef, self.max_coef_index):
             self.min_coef = "--"
             self.min_coef_index = "--"
-        return [self.name, self.min_coef, self.max_coef, self.min_bound, self.max_bound,
+        return [self.name, len(self.indexes), int(self.count / len(self.indexes)), self.min_coef, self.max_coef, self.min_bound, self.max_bound,
                 self.min_coef_index, self.max_coef_index, self.min_bound_index, self.max_bound_index,
                 self.geom_lower_count, lower_mean, self.geom_upper_count, upper_mean]
 
     @staticmethod
     def get_table_header():
-        return ["Var Name", "Min coef", "Max coef", "Min Bound", "Max bound",
+        return ["Var Name", "Count", "Avg Col Density", "Min coef", "Max coef", "Min Bound", "Max bound",
                 "Min coef index", "Max coef index", "Min bound index", "Max bound index",
                 "Lower Bound Count", "Lower Bound Geometric Mean", "Upper bound count", "Upper bound geometric mean"]
 
@@ -206,6 +210,16 @@ class ConstraintStat(TableRow):
         return ["Constraint Name", "Min coef", "Max coef", "Min RHS", "Max RHS",
                 "Min coef index", "Max coef index", "Min RHS index", "Max RHS index"]
 
+class DensityTableRow(TableRow):
+    def __init__(self, var_name, count):
+        self.var_name, self.count = var_name, count
+
+    def get_table_row(self):
+        return [self.var_name, self.count]
+
+    @staticmethod
+    def get_table_header():
+        return ["Variable", "Row Count"]
 
 def get_variable_stats(model):
     var_stats = {}
@@ -223,6 +237,8 @@ def get_variable_stats(model):
                 var_stats[var_name] = var_stat
 
             var_stat.update_coef(coef, row.row_name)
+            var_stat.indexes.add(var_index)
+            var_stat.count += 1
 
     for bound in model.bounds.values():
         var_name, var_index = split_type_and_index(bound.name)
@@ -259,6 +275,24 @@ def get_constraint_stats(model):
 
     return list(row_stats.values())
 
+
+def find_dense_columns(model: LPModel, n=10):
+    """
+    Unused method that retursn the denses columns. For now,
+    the average density of an equation is sufficient.
+    """
+    densities = {}
+    for row in model.rows.values():
+        for var, coef in row.coefficients.items():
+            if var not in densities:
+                densities[var] = 1
+            else:
+                densities[var] += 1
+
+    densities = tuple(sorted(densities.items(), key=lambda x: x[1], reverse=True))[:n]
+    densities = tuple(map(lambda d: DensityTableRow(d[0], d[1]), densities))
+
+    return densities
 
 def split_type_and_index(name):
     row_type, _, index = name.partition("(")
