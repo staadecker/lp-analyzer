@@ -11,6 +11,9 @@ def main():
                         default=None)
     args = parser.parse_args()
 
+    if args.output_file is None:
+        args.output_file = args.input_file[:-4] + ".txt"
+
     # Read input file and load into Model object
     model = MPSReader(args.input_file).read()
 

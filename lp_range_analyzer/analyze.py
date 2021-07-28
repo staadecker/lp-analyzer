@@ -141,7 +141,7 @@ class VariableStat(TableRow):
 
     @staticmethod
     def get_table_header():
-        return ["Var Name", "Count", "Avg Col Density", "Min coef", "Max coef", "Min Bound", "Max bound",
+        return ["Var Name", "Col Count", "Avg Col Non-Zeroes", "Min coef", "Max coef", "Min Bound", "Max bound",
                 "Min coef index", "Max coef index", "Min bound index", "Max bound index",
                 "Lower Bound Count", "Lower Bound Geometric Mean", "Upper bound count", "Upper bound geometric mean"]
 
@@ -163,6 +163,8 @@ class ConstraintStat(TableRow):
         self.max_rhs = 0
         self.min_coef = float('inf')
         self.max_coef = 0
+        self.count = 0
+        self.num_rows = 0
 
     def update_rhs(self, val, ext):
         # If constaint is None, it's likely the objective function, we skip
@@ -195,6 +197,8 @@ class ConstraintStat(TableRow):
             self.min_rhs_ext = "--"
         return [
             self.name,
+            self.num_rows,
+            int(self.count / self.num_rows),
             self.min_coef,
             self.max_coef,
             self.min_rhs,
@@ -207,7 +211,7 @@ class ConstraintStat(TableRow):
 
     @staticmethod
     def get_table_header():
-        return ["Constraint Name", "Min coef", "Max coef", "Min RHS", "Max RHS",
+        return ["Constraint Name", "Row count", "Avg row non-zeroes", "Min coef", "Max coef", "Min RHS", "Max RHS",
                 "Min coef index", "Max coef index", "Min RHS index", "Max RHS index"]
 
 class DensityTableRow(TableRow):
@@ -272,13 +276,15 @@ def get_constraint_stats(model):
         row_stat.update_min_coef(min_coef, min_var)
         row_stat.update_max_coef(max_coef, max_var)
         row_stat.update_rhs(row.rhs_value, row_index)
+        row_stat.num_rows += 1
+        row_stat.count += len(row.coefficients)
 
     return list(row_stats.values())
 
 
 def find_dense_columns(model: LPModel, n=10):
     """
-    Unused method that retursn the denses columns. For now,
+    Unused method that returns the dense columns. For now,
     the average density of an equation is sufficient.
     """
     densities = {}
