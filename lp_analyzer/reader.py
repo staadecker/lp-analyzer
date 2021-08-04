@@ -5,7 +5,7 @@ https://en.wikipedia.org/wiki/MPS_(format)
 from typing import List
 import time
 
-from lp_range_analyzer.core import Bound, LPModel
+from .core import Bound, LPModel
 
 
 class MPSReader:

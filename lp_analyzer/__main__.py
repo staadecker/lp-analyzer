@@ -1,6 +1,6 @@
 import argparse
-from lp_range_analyzer.reader import MPSReader
-from lp_range_analyzer.analyze import full_analysis
+from lp_analyzer.reader import MPSReader
+from lp_analyzer.analyze import full_analysis
 
 
 def main():

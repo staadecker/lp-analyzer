@@ -6,7 +6,7 @@ from typing import Dict, List
 import time
 import math
 
-from lp_range_analyzer.core import LPModel
+from .core import LPModel
 
 include_obj_coef = False
 
