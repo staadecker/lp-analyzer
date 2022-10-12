@@ -41,20 +41,24 @@ class MPSReader:
         with open(self.filename, "r") as file:
             lines = file.readlines()
 
-        # For each line in the file
-        for line in lines:
-            # Split the line based on its whitespace
-            # This will also trim the \n from the end.
-            split_line = line.split()
+        try:
+            # For each line in the file
+            for line in lines:
+                # Split the line based on its whitespace
+                # This will also trim the \n from the end.
+                split_line = line.split()
 
-            # If there's only one word, it's a keyword
-            if len(split_line) == 1:
-                # From the keyword, find the next function to run to parse the following lines
-                self.function_to_run = self.KEY_MAPPING[split_line[0]]
-                continue
+                # If there's only one word, it's a keyword
+                if len(split_line) == 1:
+                    # From the keyword, find the next function to run to parse the following lines
+                    self.function_to_run = self.KEY_MAPPING[split_line[0]]
+                    continue
 
-            # If it's not a keyword, evaluate that function
-            self.function_to_run(split_line)
+                # If it's not a keyword, evaluate that function
+                self.function_to_run(split_line)
+        except:
+            raise Exception(f"Failed to parse MPS file. (line: {split_line})")
+
 
         # The _do_nothing function returns, true
         # This ensures we really reached the end of parsing
@@ -100,8 +104,15 @@ class MPSReader:
         # The second element is not important
         # The third is the variable on which the bound applies
         name = line[2]
-        # The fourth is the value of the bound
-        value = float(line[3])
+
+        # MI is equivalent to an UP bound of 0
+        if bound_type == "MI":
+            bound_type = "UP"
+            value = 0.0
+        else:
+            # The fourth is the value of the bound
+            value = float(line[3])
+
 
         # If the bound doesn't already exist, create it and add it to the dictionary of bounds
         if name not in self.model.bounds:

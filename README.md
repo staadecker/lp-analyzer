@@ -43,7 +43,7 @@ and returns the range of different coefficients
 1. Clone the repository to download the code.
 
 
-2. Run `pip install -r requirements.txt` to install the dependencies.
+2. From within the directory run `pip install .` to install the dependencies.
 
 ### Run it on a `.mps` file
 
@@ -52,26 +52,25 @@ file type stores a linear program model.
 
 Once you have your `.mps` file simply run:
 
-`python -m lp_range_analyzer path/to/file.mps`
+`python -m lp_analyzer path/to/file.mps`
 
-The relevant ranges will be automatically printed!
+The relevant ranges will be automatically printed! 
+Use `-o output.txt` to save the output to a file.
 
+### Using with Pyomo
 
-
-### Using with SWITCH
-
-[SWITCH](https://github.com/switch-model/switch) 
-is a platform for planning high-renewable power systems
-that uses linear programming. If you're trying to use
-this tool with a SWITCH model you'll first need to generate
+If you're trying to use
+this tool with a Pyomo model you'll first need to generate
 a `.lp` file then a `.mps` file. 
 
-First solve the model with the following flags.
+First solve the model with `keepfiles=True, symbolic_solver_labels=True`. For example,
 
-`switch solve --solver gurobi -v --keepfiles --tempdir temp --symbolic-solver-labels`
+```
+results = solver.solve(model, tee=True, keepfiles=True, symbolic_solver_labels=True)
+```
 
-This will save the `.lp` file to the `temp` folder. 
-To learn more about what each flag does run `switch solve -h`.
+This will save an `.lp` file to a temporary directory (as listed in the console output).
+
 
 Once you have your `.lp` file, you can use the Gurobi
 prompt to convert it to an `.mps` file.
@@ -91,3 +90,16 @@ The `presolve()` step is optional, but will remove
 unnecessary equations making your analysis more relevant.
 You can read more about `presolve()` [here](https://www.gurobi.com/documentation/9.1/refman/presolve2.html).
 
+### Using with SWITCH
+
+[SWITCH](https://github.com/switch-model/switch) 
+is a platform for planning high-renewable power systems
+that uses linear programming.
+
+The steps to using this library with SWITCH are nearly identical to that of using it with Pyomo.
+The only difference is you can use the following command to generate the `.lp` file.
+
+`switch solve --solver gurobi -v --keepfiles --tempdir temp --symbolic-solver-labels`
+
+This will save the `.lp` file to the `temp` folder. 
+To learn more about what each flag does run `switch solve -h`.
