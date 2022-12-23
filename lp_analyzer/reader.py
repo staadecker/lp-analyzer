@@ -30,7 +30,7 @@ class MPSReader:
             "COLUMNS": self._read_column,
             "RHS": self._read_rhs,
             "BOUNDS": self._read_bound,
-            "ENDATA": self._do_nothing
+            "ENDATA": self._do_nothing,
         }
 
     def read(self):
@@ -56,7 +56,6 @@ class MPSReader:
                 self.function_to_run(split_line)
         except:
             raise Exception(f"Failed to parse MPS file. (line: {split_line})")
-
 
         # The _do_nothing function returns, true
         # This ensures we really reached the end of parsing
@@ -108,7 +107,6 @@ class MPSReader:
         else:
             # The fourth is the value of the bound
             value = float(line[3])
-
 
         # If the bound doesn't already exist, create it and add it to the dictionary of bounds
         if name not in self.model.bounds:

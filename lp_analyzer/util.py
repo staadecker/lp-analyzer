@@ -2,7 +2,9 @@ import time
 from typing import Collection
 
 
-def print_progress(collection: Collection, message, check_progress_every=1000, min_print_interval=1):
+def print_progress(
+    collection: Collection, message, check_progress_every=1000, min_print_interval=0.1
+):
     """Generator that given a collection will allow the caller to loop over and will
     print the progress in the meantime."""
     start_time = time.time()
@@ -17,4 +19,3 @@ def print_progress(collection: Collection, message, check_progress_every=1000, m
 
         yield val
     print(f"{message}. Done in {(time.time() - start_time):.1f} s")
-

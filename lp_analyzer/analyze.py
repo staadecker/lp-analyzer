@@ -42,7 +42,7 @@ def make_table(rows: List[TableRow]):
         map(lambda r: r.get_formatted_table_row(), rows),
         headers=rows[0].get_table_header(),
         tablefmt="github",
-        disable_numparse=True  # Parsing is done upstream
+        disable_numparse=True,  # Parsing is done upstream
     )
 
 
@@ -57,11 +57,12 @@ class VariableStat(TableRow):
     - Geometric mean of upper bound and number of upper bounds
     - Geometric mean of lower bounds and number of lower bounds
     """
+
     def __init__(self, name):
         self.name = name
-        self.min_coef = float('inf')
+        self.min_coef = float("inf")
         self.max_coef = 0
-        self.min_bound = float('inf')
+        self.min_bound = float("inf")
         self.max_bound = 0
         self.min_coef_index = None
         self.max_coef_index = None
@@ -75,7 +76,7 @@ class VariableStat(TableRow):
         self.count = 0
 
     def update_coef(self, val, ext):
-        val = abs(val) # We only care about magnitude of coefficients
+        val = abs(val)  # We only care about magnitude of coefficients
 
         # If coef is less than the minimum update the minimum
         if val < self.min_coef:
@@ -125,25 +126,71 @@ class VariableStat(TableRow):
         self.geom_upper_sum += math.log(val)
 
     def __str__(self):
-        return self.name + "\t" + str(self.min_coef) + "\t" + str(self.max_coef) + "\t" + str(
-            self.min_bound) + "\t" + str(self.max_bound)
+        return (
+            self.name
+            + "\t"
+            + str(self.min_coef)
+            + "\t"
+            + str(self.max_coef)
+            + "\t"
+            + str(self.min_bound)
+            + "\t"
+            + str(self.max_bound)
+        )
 
     def get_table_row(self):
         # Calculate the geometric mean for the upper and lower bounds.
-        lower_mean = None if self.geom_lower_count == 0 else math.exp(self.geom_lower_sum / self.geom_lower_count)
-        upper_mean = None if self.geom_upper_count == 0 else math.exp(self.geom_upper_sum / self.geom_upper_count)
+        lower_mean = (
+            None
+            if self.geom_lower_count == 0
+            else math.exp(self.geom_lower_sum / self.geom_lower_count)
+        )
+        upper_mean = (
+            None
+            if self.geom_upper_count == 0
+            else math.exp(self.geom_upper_sum / self.geom_upper_count)
+        )
         if (self.min_coef, self.min_coef_index) == (self.max_coef, self.max_coef_index):
             self.min_coef = "--"
             self.min_coef_index = "--"
-        return [self.name, len(self.indexes), int(self.count / len(self.indexes)), self.min_coef, self.max_coef, self.min_bound, self.max_bound,
-                self.min_coef_index, self.max_coef_index, self.min_bound_index, self.max_bound_index,
-                self.geom_lower_count, lower_mean, self.geom_upper_count, upper_mean]
+        return [
+            self.name,
+            len(self.indexes),
+            int(self.count / len(self.indexes)),
+            self.min_coef,
+            self.max_coef,
+            self.min_bound,
+            self.max_bound,
+            self.min_coef_index,
+            self.max_coef_index,
+            self.min_bound_index,
+            self.max_bound_index,
+            self.geom_lower_count,
+            lower_mean,
+            self.geom_upper_count,
+            upper_mean,
+        ]
 
     @staticmethod
     def get_table_header():
-        return ["Var Name", "Col Count", "Avg Col Non-Zeroes", "Min coef", "Max coef", "Min Bound", "Max bound",
-                "Min coef index", "Max coef index", "Min bound index", "Max bound index",
-                "Lower Bound Count", "Lower Bound Geometric Mean", "Upper bound count", "Upper bound geometric mean"]
+        return [
+            "Var Name",
+            "Col Count",
+            "Avg Col Non-Zeroes",
+            "Min coef",
+            "Max coef",
+            "Min Bound",
+            "Max bound",
+            "Min coef index",
+            "Max coef index",
+            "Min bound index",
+            "Max bound index",
+            "Lower Bound Count",
+            "Lower Bound Geometric Mean",
+            "Upper bound count",
+            "Upper bound geometric mean",
+        ]
+
 
 class ConstraintStat(TableRow):
     """
@@ -153,15 +200,16 @@ class ConstraintStat(TableRow):
     - The minimum and maximum coefficients for that constaint
     - The specific index of the constraint on which the above statistics are found
     """
+
     def __init__(self, name):
         self.name = name
         self.min_coef_ext = None
         self.max_coef_ext = None
         self.min_rhs_ext = None
         self.max_rhs_ext = None
-        self.min_rhs = float('inf')
+        self.min_rhs = float("inf")
         self.max_rhs = 0
-        self.min_coef = float('inf')
+        self.min_coef = float("inf")
         self.max_coef = 0
         self.count = 0
         self.num_rows = 0
@@ -206,13 +254,25 @@ class ConstraintStat(TableRow):
             self.min_coef_ext,
             self.max_coef_ext,
             self.min_rhs_ext,
-            self.max_rhs_ext
+            self.max_rhs_ext,
         ]
 
     @staticmethod
     def get_table_header():
-        return ["Constraint Name", "Row count", "Avg row non-zeroes", "Min coef", "Max coef", "Min RHS", "Max RHS",
-                "Min coef index", "Max coef index", "Min RHS index", "Max RHS index"]
+        return [
+            "Constraint Name",
+            "Row count",
+            "Avg row non-zeroes",
+            "Min coef",
+            "Max coef",
+            "Min RHS",
+            "Max RHS",
+            "Min coef index",
+            "Max coef index",
+            "Min RHS index",
+            "Max RHS index",
+        ]
+
 
 class DensityTableRow(TableRow):
     def __init__(self, var_name, count):
@@ -225,9 +285,12 @@ class DensityTableRow(TableRow):
     def get_table_header():
         return ["Variable", "Row Count"]
 
+
 def get_variable_stats(model):
     var_stats = {}
-    for row in print_progress(model.rows.values(), message="Analyzing variable coefficients"):
+    for row in print_progress(
+        model.rows.values(), message="Analyzing variable coefficients"
+    ):
         # Skip the objective, we want values only in the matrix
         if row.is_objective and not include_obj_coef:
             continue
@@ -244,7 +307,9 @@ def get_variable_stats(model):
             var_stat.indexes.add(var_index)
             var_stat.count += 1
 
-    for bound in print_progress(model.bounds.values(), message="Analyzing variable bounds"):
+    for bound in print_progress(
+        model.bounds.values(), message="Analyzing variable bounds"
+    ):
         var_name, var_index = split_type_and_index(bound.name)
 
         try:
@@ -261,7 +326,9 @@ def get_variable_stats(model):
 
 def get_constraint_stats(model):
     row_stats: Dict[str, ConstraintStat] = {}
-    for full_name, row in print_progress(model.rows.items(), message="Analyzing constraints"):
+    for full_name, row in print_progress(
+        model.rows.items(), message="Analyzing constraints"
+    ):
         min_pair, max_pair = row.coefficient_range()
         min_var, min_coef = min_pair
         max_var, max_coef = max_pair
@@ -300,9 +367,10 @@ def find_dense_columns(model: LPModel, n=10):
 
     return densities
 
+
 def split_type_and_index(name):
     row_type, _, index = name.partition("(")
-    index = index[:index.find(")")]
+    index = index[: index.find(")")]
     return row_type, index
 
 
@@ -310,7 +378,12 @@ def full_analysis(model, outfile):
     var_stats = get_variable_stats(model)
     constraint_stats = get_constraint_stats(model)
 
-    str_output = make_table(var_stats) + "\n\n" + make_table(constraint_stats)
+    str_output = (
+        "Created by Martin Staadecker's LP analyzer tool. Enjoy! (https://github.com/staadecker/lp-analyzer)\n\n"
+        + make_table(var_stats)
+        + "\n\n"
+        + make_table(constraint_stats)
+    )
 
     if outfile is not None:
         with open(outfile, "w") as f:

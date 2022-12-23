@@ -10,6 +10,11 @@ if __name__ == "__main__":
         author_email="machstg@gmail.com",
         install_requires=[
             "tabulate"
-        ]
+        ],
+        entry_points={
+            "console_scripts": [
+                "lp-analyzer=lp_analyzer.__main__:main"
+            ]
+        }
 
     )

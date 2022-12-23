@@ -7,8 +7,13 @@ def main():
     # Parse command line input
     parser = argparse.ArgumentParser()
     parser.add_argument("input_file", type=str, help="Path of input file")
-    parser.add_argument("-o", "--output-file", type=str, help="Specify an output text file to store the log output.",
-                        default=None)
+    parser.add_argument(
+        "-o",
+        "--output-file",
+        type=str,
+        help="Specify an output text file to store the log output.",
+        default=None,
+    )
     args = parser.parse_args()
 
     if args.output_file is None:
@@ -21,5 +26,5 @@ def main():
     full_analysis(model, args.output_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

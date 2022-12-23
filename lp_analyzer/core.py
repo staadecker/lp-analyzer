@@ -14,9 +14,11 @@ class LPModel:
         self.bounds: Dict[str, Bound] = {}
 
     def add_row(self, row_name: str, row_type: str):
-        assert row_name not in self.rows  # Make sure it doesn't already exist (don't want to overwrite)
+        assert (
+            row_name not in self.rows
+        )  # Make sure it doesn't already exist (don't want to overwrite)
         self.rows[row_name] = Row(row_name, row_type)
-        if row_type == "N": # If row is the objective row
+        if row_type == "N":  # If row is the objective row
             if self.objective is not None:
                 raise Exception("Can't set objective, it already exists")
             self.objective = self.rows[row_name]
@@ -46,7 +48,9 @@ class Row:
         self.row_name: str = row_name
         self.row_type: str = row_type
         self.coefficients: Dict[str, float] = {}
-        self.rhs_value: Optional[float] = 0.0  # Need float since that's what's expected in analysis
+        self.rhs_value: Optional[
+            float
+        ] = 0.0  # Need float since that's what's expected in analysis
         self.is_objective: bool = False  # Can be overidden after creation
 
     def print(self):
@@ -63,14 +67,22 @@ class Row:
                 print(f"{coefficient}*{var_name}", end="\t")
         print()
 
-    def coefficient_range(self) -> Tuple[Tuple[Optional[str], float], Tuple[Optional[str], float]]:
+    def coefficient_range(
+        self,
+    ) -> Tuple[Tuple[Optional[str], float], Tuple[Optional[str], float]]:
         """
         Returns two tuples containing the name and value of the minimum and maximum coefficient for this row.
         """
         absolute_coefficients = tuple(
-            filter(lambda k_v: k_v[1] != 0, map(lambda k_v: (k_v[0], abs(k_v[1])), self.coefficients.items())))
+            filter(
+                lambda k_v: k_v[1] != 0,
+                map(lambda k_v: (k_v[0], abs(k_v[1])), self.coefficients.items()),
+            )
+        )
         if absolute_coefficients:
-            return min(absolute_coefficients, key=lambda k_v: k_v[1]), max(absolute_coefficients, key=lambda k_v: k_v[1])
+            return min(absolute_coefficients, key=lambda k_v: k_v[1]), max(
+                absolute_coefficients, key=lambda k_v: k_v[1]
+            )
         return (None, float("inf")), (None, 0)
 
 
