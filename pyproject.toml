@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lp-analyzer"
-version = "1.0.1"
+version = "1.0.2"
 description = "Analyze numerical issues in linear programs"
 readme = "README.md"
 authors = [{ name = "Martin Staadecker", email = "machstg@gmail.com" }]

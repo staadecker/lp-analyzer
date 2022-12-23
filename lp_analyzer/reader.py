@@ -76,8 +76,9 @@ class MPSReader:
         """Read a line from the COLUMNS section"""
         # The first element of a column is the variable name
         # Then it alternates between row name and coefficient value
+        var_name = line[0]
         for i in range(1, len(line), 2):
-            self.model.rows[line[i]].coefficients[line[0]] = float(line[i + 1])
+            self.model.rows[line[i]].coefficients[var_name] = float(line[i + 1])
 
     def _read_rhs(self, line: List):
         """Read a line from the RHS section"""

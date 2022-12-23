@@ -2,7 +2,7 @@
 Provides functions to analyze a Model.
 """
 from tabulate import tabulate
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import math
 
 from .core import LPModel
@@ -368,10 +368,12 @@ def find_dense_columns(model: LPModel, n=10):
     return densities
 
 
-def split_type_and_index(name):
-    row_type, _, index = name.partition("(")
-    index = index[: index.find(")")]
-    return row_type, index
+def split_type_and_index(name: str) -> Tuple[str, str]:
+    """
+    'var(122, 12)' -> ('var', '122, 12')
+    """
+    bracket_pos = name.find("(")
+    return name[:bracket_pos], name[bracket_pos + 1: name.rfind(")")]
 
 
 def full_analysis(model, outfile):
@@ -385,8 +387,5 @@ def full_analysis(model, outfile):
         + make_table(constraint_stats)
     )
 
-    if outfile is not None:
-        with open(outfile, "w") as f:
-            f.write(str_output)
-    else:
-        print(str_output)
+    with open(outfile, "w") as f:
+        f.write(str_output)

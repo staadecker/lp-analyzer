@@ -4,4 +4,4 @@
 *.egg-info
 build/
 *.whl
-*
+*.tar.gz
