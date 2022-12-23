@@ -3,10 +3,10 @@ Provides functions to analyze a Model.
 """
 from tabulate import tabulate
 from typing import Dict, List
-import time
 import math
 
 from .core import LPModel
+from .util import print_progress
 
 include_obj_coef = False
 
@@ -227,7 +227,7 @@ class DensityTableRow(TableRow):
 
 def get_variable_stats(model):
     var_stats = {}
-    for row in model.rows.values():
+    for row in print_progress(model.rows.values(), message="Analyzing variable coefficients"):
         # Skip the objective, we want values only in the matrix
         if row.is_objective and not include_obj_coef:
             continue
@@ -244,7 +244,7 @@ def get_variable_stats(model):
             var_stat.indexes.add(var_index)
             var_stat.count += 1
 
-    for bound in model.bounds.values():
+    for bound in print_progress(model.bounds.values(), message="Analyzing variable bounds"):
         var_name, var_index = split_type_and_index(bound.name)
 
         try:
@@ -261,7 +261,7 @@ def get_variable_stats(model):
 
 def get_constraint_stats(model):
     row_stats: Dict[str, ConstraintStat] = {}
-    for full_name, row in model.rows.items():
+    for full_name, row in print_progress(model.rows.items(), message="Analyzing constraints"):
         min_pair, max_pair = row.coefficient_range()
         min_var, min_coef = min_pair
         max_var, max_coef = max_pair
@@ -307,16 +307,13 @@ def split_type_and_index(name):
 
 
 def full_analysis(model, outfile):
-    print("Analyzing model...")
-    start_time = time.time()
     var_stats = get_variable_stats(model)
     constraint_stats = get_constraint_stats(model)
 
-    str_output = f"Analyzed model in {(time.time() - start_time):.2f} s.\n"
-    str_output += make_table(var_stats) + "\n\n" + make_table(constraint_stats)
+    str_output = make_table(var_stats) + "\n\n" + make_table(constraint_stats)
 
     if outfile is not None:
         with open(outfile, "w") as f:
             f.write(str_output)
-
-    print(str_output)
+    else:
+        print(str_output)

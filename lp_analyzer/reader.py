@@ -3,9 +3,9 @@ Provides the class MPSReader which allows reading an .mps linear programming mod
 https://en.wikipedia.org/wiki/MPS_(format)
 """
 from typing import List
-import time
 
 from .core import Bound, LPModel
+from .util import print_progress
 
 
 class MPSReader:
@@ -34,8 +34,6 @@ class MPSReader:
         }
 
     def read(self):
-        start_time = time.time()
-        print("Reading MPS file...")
         # Open the file and save the rows to 'lines'
         # This is faster than "for line in file:".
         with open(self.filename, "r") as file:
@@ -43,7 +41,7 @@ class MPSReader:
 
         try:
             # For each line in the file
-            for line in lines:
+            for line in print_progress(lines, message="Loading model from file"):
                 # Split the line based on its whitespace
                 # This will also trim the \n from the end.
                 split_line = line.split()
@@ -63,8 +61,6 @@ class MPSReader:
         # The _do_nothing function returns, true
         # This ensures we really reached the end of parsing
         assert self.function_to_run(None)
-
-        print(f"Read and constructed model in {(time.time() - start_time):.2f} s.")
         return self.model
 
     def _do_nothing(self, _):
