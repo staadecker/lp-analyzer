@@ -1,3 +1,30 @@
 [build-system]
 requires = ["setuptools >= 40.6.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "lp-analyzer"
+version = "1.0.1"
+description = "Analyze numerical issues in linear programs"
+readme = "README.md"
+authors = [{ name = "Martin Staadecker", email = "machstg@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["linear programming", "numerical issues"]
+dependencies = [
+    "tabulate"
+]
+requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = ["black"]
+
+[project.urls]
+Homepage = "https://github.com/staadecker/lp-analyzer"
+
+[project.scripts]
+lp-analyzer = "lp_analyzer.__main__:main"

@@ -1,15 +1,20 @@
-# Tool for investigating numerical issues in linear programs
+# Analyze numerical issues in linear programs
 
 This tool helps resolve numerical issues in a linear programming
 model. I developed it will doing research for the [REAM Research Lab](https://patyhidalgo.github.io/)
 on the [SWITCH](http://switch-model.org/) Power System Planning
 Model.
 
-## Quick start
+## Usage
 
-1. Download code from GitHub.
-2. In the repository run, `pip install .`
-3. Run `lp-analyzer <path_to_mps_file> -o <path_to_output_text_file>`
+1. Generate a `.mps` file of the linear program you want to analyze (see instructions below).
+2. Install this package: `pip install lp-analyzer`
+3. Run the analyzer: `lp-analyzer <path_to_mps_file> -o <path_to_output_text_file>`
+4. The generated output file will give you useful
+insights into the numerical properties of your model to help 
+you solve numerical issues. For example, it tells you the range of your coefficients
+on a per constraint and per variable basis which tells you how to
+scale your model.
 
 ## Detailed guide
 
@@ -48,10 +53,10 @@ and returns the range of different coefficients
 
 #### Install it
 
-1. Clone the repository to download the code.
+Simply run `pip install lp-analyzer`.
 
-
-2. From within the directory run `pip install .` to install the dependencies.
+If you want to install from the source code, clone the repository to download the code
+and run within the directory `pip install .`.
 
 #### Run it on a `.mps` file
 
