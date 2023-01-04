@@ -1,6 +1,10 @@
 # Releases
 
-# v1.1.0 (Jan 4th, 2023)
+# v1.1.2 (Jan 4th, 2023)
+
+- Fix: typo making command line tool fail
+
+# v1.1.1 (Jan 4th, 2023)
 
 - Chore: Improve README.md
 

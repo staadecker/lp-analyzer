@@ -15,7 +15,7 @@ def main():
         default=None,
     )
     args = parser.parse_args()
-    main_without_argument_parser(args.input_file, args.output_File)
+    main_without_argument_parser(args.input_file, args.output_file)
 
 
 def main_without_argument_parser(input_file, output_file=None):
