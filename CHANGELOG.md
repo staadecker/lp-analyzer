@@ -1,5 +1,9 @@
 # Releases
 
+# v1.2.0 (Jan 4th, 2023)
+
+- Feature: Add support for MIPs by properly parsing "MARKER" keyword and 'BV' bounds..
+
 # v1.1.2 (Jan 4th, 2023)
 
 - Fix: typo making command line tool fail

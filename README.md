@@ -1,7 +1,7 @@
 # Analyze numerical issues in linear programs
 
 This tool helps analyze numerical issues in a linear programming
-model. I started developing it will doing research for the [REAM Research Lab](https://patyhidalgo.github.io/)
+model (LP and MIP). I started developing it will doing research for the [REAM Research Lab](https://patyhidalgo.github.io/)
 on the [SWITCH](http://switch-model.org/) Power System Planning
 Model.
 

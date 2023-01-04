@@ -1,6 +1,7 @@
 """
 Provides the class MPSReader which allows reading an .mps linear programming model.
 https://en.wikipedia.org/wiki/MPS_(format)
+https://lpsolve.sourceforge.net/5.5/mps-format.htm
 """
 from typing import List
 
@@ -77,6 +78,11 @@ class MPSReader:
         # The first element of a column is the variable name
         # Then it alternates between row name and coefficient value
         var_name = line[0]
+
+        # Skip the MARKER variables since that defines the start and end of an integer variables.
+        if var_name == "MARKER" and line[1] == "'MARKER'":
+            return
+
         for i in range(1, len(line), 2):
             self.model.rows[line[i]].coefficients[var_name] = float(line[i + 1])
 
@@ -101,14 +107,6 @@ class MPSReader:
         # The third is the variable on which the bound applies
         name = line[2]
 
-        # MI is equivalent to an UP bound of 0
-        if bound_type == "MI":
-            bound_type = "UP"
-            value = 0.0
-        else:
-            # The fourth is the value of the bound
-            value = float(line[3])
-
         # If the bound doesn't already exist, create it and add it to the dictionary of bounds
         if name not in self.model.bounds:
             bound = Bound(name)
@@ -118,12 +116,18 @@ class MPSReader:
             bound = self.model.bounds[name]
 
         # Set either the upper or the lower bound depending on the bound type
-        if bound_type == "UP":
-            bound.rhs_bound = value
+        if bound_type == "MI":
+            bound.rhs_bound = 0
+        elif bound_type == "PL":
+            bound.lhs_bound = 0
+        elif bound_type == "UP":
+            bound.rhs_bound = float(line[3])
         elif bound_type == "LO":
-            bound.lhs_bound = value
+            bound.lhs_bound = float(line[3])
         elif bound_type == "FX":
-            bound.lhs_bound = value
-            bound.rhs_bound = value
+            bound.lhs_bound = bound.rhs_bound = float(line[3])
+        elif bound_type == "BV":
+            bound.lhs_bound = 0
+            bound.rhs_bound = 1
         else:
             raise Exception(f"Unknown bound type {bound_type}")
