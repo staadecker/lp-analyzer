@@ -15,16 +15,19 @@ def main():
         default=None,
     )
     args = parser.parse_args()
+    main_without_argument_parser(args.input_file, args.output_File)
 
-    if args.output_file is None:
-        args.output_file = args.input_file[:-4] + ".txt"
+
+def main_without_argument_parser(input_file, output_file=None):
+    if output_file is None:
+        output_file = input_file[:-4] + "_results.txt"
 
     # Read input file and load into Model object
-    model = MPSReader(args.input_file).read()
+    model = MPSReader(input_file).read()
 
     # Analyze the model
-    full_analysis(model, args.output_file)
+    full_analysis(model, output_file)
 
 
 if __name__ == "__main__":
-    main()
+    main_without_argument_parser("../examples/small_model.mps")

@@ -369,11 +369,9 @@ def find_dense_columns(model: LPModel, n=10):
 
 
 def split_type_and_index(name: str) -> Tuple[str, str]:
-    """
-    'var(122, 12)' -> ('var', '122, 12')
-    """
-    bracket_pos = name.find("(")
-    return name[:bracket_pos], name[bracket_pos + 1: name.rfind(")")]
+    row_type, _, index = name.partition("(")
+    index = index[: index.find(")")]
+    return row_type, index
 
 
 def full_analysis(model, outfile):
@@ -389,3 +387,4 @@ def full_analysis(model, outfile):
 
     with open(outfile, "w") as f:
         f.write(str_output)
+    print(f"Saved results to: {outfile}")
