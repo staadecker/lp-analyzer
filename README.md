@@ -1,20 +1,20 @@
 # Analyze numerical issues in linear programs
 
-This tool helps resolve numerical issues in a linear programming
-model. I developed it will doing research for the [REAM Research Lab](https://patyhidalgo.github.io/)
+This tool helps analyze numerical issues in a linear programming
+model. I started developing it will doing research for the [REAM Research Lab](https://patyhidalgo.github.io/)
 on the [SWITCH](http://switch-model.org/) Power System Planning
 Model.
 
+
 ## Usage
 
-1. Generate a `.mps` file of the linear program you want to analyze (see instructions below).
-2. Install this package: `pip install lp-analyzer`
-3. Run the analyzer: `lp-analyzer <path_to_mps_file> -o <path_to_output_text_file>`
-4. The generated output file will give you useful
-insights into the numerical properties of your model to help 
-you solve numerical issues. For example, it tells you the range of your coefficients
-on a per constraint and per variable basis which tells you how to
-scale your model.
+1. `pip install lp-analyzer`
+2. `lp-analyzer <path_to_mps_model_file>`
+3. The generated output file gives
+insight into the numerical properties of the model. For example, it outputs the range of the coefficients
+of each constraint type and each variable type.
+
+See instructions below to learn how to generate a [`.mps` file](https://en.wikipedia.org/wiki/MPS_(format)) with Pyomo, Switch or Gurobi.
 
 ## Detailed guide
 
@@ -67,8 +67,8 @@ Once you have your `.mps` file simply run:
 
 `lp_analyzer path/to/file.mps`
 
-The relevant ranges will be automatically printed! 
-Use `-o output.txt` to save the output to a file.
+The relevant ranges will be automatically be saved to a file! 
+To change the output file use `-o output.txt`.
 
 #### Using with Pyomo
 
