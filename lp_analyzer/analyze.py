@@ -15,11 +15,14 @@ class TableRow:
     """A row that can be printed as part of a table."""
 
     def get_table_row(self):
-        raise NotImplemented
+        raise NotImplemented()
+
+    def get_sort_key(self):
+        raise NotImplemented()
 
     @staticmethod
     def get_table_header():
-        raise NotImplemented
+        raise NotImplemented()
 
     def get_formatted_table_row(self):
         """
@@ -39,7 +42,10 @@ class TableRow:
 
 def make_table(rows: List[TableRow]):
     return tabulate(
-        map(lambda r: r.get_formatted_table_row(), rows),
+        map(
+            lambda r: r.get_formatted_table_row(),
+            sorted(rows, key=lambda r: r.get_sort_key(), reverse=True),
+        ),
         headers=rows[0].get_table_header(),
         tablefmt="github",
         disable_numparse=True,  # Parsing is done upstream
@@ -159,6 +165,9 @@ class VariableStat(TableRow):
             int(self.count / len(self.indexes)),
             self.min_coef,
             self.max_coef,
+            int(math.log10(self.max_coef) - math.log10(self.min_coef))
+            if type(self.min_coef) == float and type(self.max_coef) == float
+            else None,
             self.min_bound,
             self.max_bound,
             self.min_coef_index,
@@ -171,6 +180,13 @@ class VariableStat(TableRow):
             upper_mean,
         ]
 
+    def get_sort_key(self):
+        return (
+            math.log10(self.max_coef) - math.log10(self.min_coef)
+            if type(self.min_coef) == float and type(self.max_coef) == float
+            else None
+        )
+
     @staticmethod
     def get_table_header():
         return [
@@ -179,6 +195,7 @@ class VariableStat(TableRow):
             "Avg Col Non-Zeroes",
             "Min coef",
             "Max coef",
+            "Coef range",
             "Min Bound",
             "Max bound",
             "Min coef index",
@@ -213,6 +230,13 @@ class ConstraintStat(TableRow):
         self.max_coef = 0
         self.count = 0
         self.num_rows = 0
+
+    def get_sort_key(self):
+        return (
+            math.log10(self.max_coef) - math.log10(self.min_coef)
+            if type(self.min_coef) == float and type(self.max_coef) == float
+            else None
+        )
 
     def update_rhs(self, val, ext):
         # If constaint is None, it's likely the objective function, we skip
@@ -249,6 +273,9 @@ class ConstraintStat(TableRow):
             int(self.count / self.num_rows),
             self.min_coef,
             self.max_coef,
+            int(math.log10(self.max_coef) - math.log10(self.min_coef))
+            if type(self.min_coef) == float and type(self.max_coef) == float
+            else None,
             self.min_rhs,
             self.max_rhs,
             self.min_coef_ext,
@@ -265,6 +292,7 @@ class ConstraintStat(TableRow):
             "Avg row non-zeroes",
             "Min coef",
             "Max coef",
+            "Coef range",
             "Min RHS",
             "Max RHS",
             "Min coef index",
